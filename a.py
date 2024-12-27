@@ -41,12 +41,14 @@ class ImprovedMF():
             if self.R[i, j] > 0
         ]
         
-        # Split into train/validation
-        train_data, val_data = train_test_split(train_data, test_size=0.1, random_state=42)
+        # Split into train/validation/test sets (80-10-10)
+        train_data, temp_data = train_test_split(train_data, test_size=0.2, random_state=42)
+        val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
         
         print("Starting training...")
         training_process = []
         best_val_rmse = float('inf')
+        best_model_state = None
         no_improvement = 0
         
         for iteration in range(self.iterations):
@@ -75,6 +77,7 @@ class ImprovedMF():
             # Early stopping check
             if val_rmse < best_val_rmse:
                 best_val_rmse = val_rmse
+                best_model_state = (self.P.copy(), self.Q.copy(), self.b_u.copy(), self.b_i.copy(), self.b)
                 no_improvement = 0
             else:
                 no_improvement += 1
@@ -85,7 +88,12 @@ class ImprovedMF():
             # Stop if no improvement for 3 iterations
             if no_improvement >= 3:
                 print("Early stopping!")
+                self.P, self.Q, self.b_u, self.b_i, self.b = best_model_state
                 break
+        
+        # Calculate test RMSE
+        test_rmse = self.calculate_rmse(test_data)
+        print(f"Test RMSE: {test_rmse:.4f}")
         
         return training_process
     
